@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Language Detective Service</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 font-sans">
+    <div class="container mx-auto p-4">
+        <h1 class="text-3xl font-bold text-center mb-6">Language Detective Service</h1>
+        
+        <!-- File Upload Form -->
+        <form id="uploadForm" class="mb-8" enctype="multipart/form-data">
+            <div class="flex flex-col items-center">
+                <label for="audioFile" class="mb-2 text-lg">Upload Audio File:</label>
+                <input type="file" id="audioFile" name="audio_file" accept="audio/*" class="border p-2 rounded">
+                <input type="text" id="groundTruth" name="ground_truth_language" placeholder="Ground Truth Language (optional)" class="border p-2 rounded mt-2 w-64">
+                <button type="submit" class="mt-4 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Detect Language</button>
+            </div>
+        </form>
+
+        <!-- Results Section -->
+        <div id="results" class="hidden">
+            <h2 class="text-2xl font-semibold mb-4">Detection Results</h2>
+            <table class="w-full border-collapse border border-gray-300">
+                <thead>
+                    <tr class="bg-gray-200">
+                        <th class="border border-gray-300 p-2">Provider</th>
+                        <th class="border border-gray-300 p-2">Language</th>
+                        <th class="border border-gray-300 p-2">Time Taken (s)</th>
+                        <th class="border border-gray-300 p-2">Status</th>
+                        <th class="border border-gray-300 p-2">Error Message</th>
+                    </tr>
+                </thead>
+                <tbody id="resultsBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData();
+            const audioFile = document.getElementById('audioFile').files[0];
+            const groundTruth = document.getElementById('groundTruth').value;
+            if (!audioFile) {
+                alert('Please select an audio file');
+                return;
+            }
+            formData.append('audio_file', audioFile);
+            formData.append('ground_truth_language', groundTruth);
+
+            try {
+                const response = await fetch('/detect/language', {
+                    method: 'POST',
+                    body: formData
+                });
+                const results = await response.json();
+                
+                const resultsBody = document.getElementById('resultsBody');
+                resultsBody.innerHTML = ''; 
+                document.getElementById('results').classList.remove('hidden');
+
+                results.forEach(result => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td class="border border-gray-300 p-2">${result.provider}</td>
+                        <td class="border border-gray-300 p-2">${result.language}</td>
+                        <td class="border border-gray-300 p-2">${result.time_taken}</td>
+                        <td class="border border-gray-300 p-2">${result.status}</td>
+                        <td class="border border-gray-300 p-2">${result.error_message || ''}</td>
+                    `;
+                    resultsBody.appendChild(row);
+                });
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        });
+    </script>
+</body>
+</html>
